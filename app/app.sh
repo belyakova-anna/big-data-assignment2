@@ -9,6 +9,7 @@ bash start-services.sh
 python3 -m venv .venv
 source .venv/bin/activate
 
+pip install --upgrade pip setuptools wheel
 # Install any packages
 pip install -r requirements.txt  
 
@@ -17,7 +18,6 @@ venv-pack -o .venv.tar.gz
 
 # Collect data
 bash prepare_data.sh
-
 
 # Run the indexer
 bash index.sh

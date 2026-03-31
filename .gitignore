@@ -1,4 +1,5 @@
 */kaggle.json
+app/data/
 *.parquet
 .venv.tar.gz
 

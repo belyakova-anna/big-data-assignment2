@@ -20,7 +20,7 @@ services:
     working_dir: /app
     # You can comment the entrypoint to run the script manually inside the container
     entrypoint: 
-      - bash
+      # - bash
       - /app/app.sh
     
   cluster-slave-1:
