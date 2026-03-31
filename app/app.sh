@@ -27,3 +27,5 @@ bash index.sh
 
 # Run the ranker
 bash search.sh "this is a query!"
+
+tail -f /dev/null
