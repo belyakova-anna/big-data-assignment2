@@ -1,4 +1,6 @@
 #!/bin/bash
+set -euo pipefail
+
 # Start ssh server
 service ssh restart 
 
@@ -14,6 +16,7 @@ pip install --upgrade pip setuptools wheel
 pip install -r requirements.txt  
 
 # Package the virtual env.
+rm -f .venv.tar.gz
 venv-pack -o .venv.tar.gz
 
 # Collect data
