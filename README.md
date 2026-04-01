@@ -4,7 +4,17 @@
 ## Step 1: Install prerequisites
 - Docker
 - Docker compose
-## Step 2: Run the command
+## Step 2: Download the dataset file
+
+Download `a.parquet` from Kaggle:
+
+- [Wikipedia 20230701 (a.parquet)](https://www.kaggle.com/datasets/jjinho/wikipedia-20230701?select=a.parquet)
+
+Place the file at:
+
+- `app/a.parquet`
+
+## Step 3: Run the command
 ```bash
 docker compose up 
 ```

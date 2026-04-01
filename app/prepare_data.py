@@ -1,7 +1,12 @@
+from __future__ import annotations
+
 import os
 import re
 import shutil
 import subprocess
+from glob import glob
+from pathlib import Path
+from typing import Optional
 
 from pathvalidate import sanitize_filename
 from pyspark.sql import SparkSession
@@ -12,6 +17,19 @@ N_DOCS = 1000
 LOCAL_DATA_DIR = "/app/data"
 HDFS_DOCS_DIR = "/data"
 HDFS_INPUT_DIR = "/input/data"
+
+
+def resolve_parquet_path() -> Optional[str]:
+    """Prefer repo-local file (Docker: /app/a.parquet); else root /a.parquet; else None."""
+    for p in ("/app/a.parquet", "/a.parquet"):
+        if os.path.isfile(p):
+            return p
+    return None
+
+
+def spark_local_parquet_uri(local_path: str) -> str:
+    """Force local filesystem; otherwise Spark resolves /app/... to HDFS default FS."""
+    return Path(local_path).resolve().as_uri()
 
 
 def build_filename(doc_id: str, title: str) -> str:
@@ -40,24 +58,34 @@ spark = (
     .getOrCreate()
 )
 
-df = (
-    spark.read.parquet("/a.parquet")
-    .select("id", "title", "text")
-    .where(F.col("id").isNotNull() & F.col("title").isNotNull() & F.col("text").isNotNull())
-    .where(F.length(F.trim(F.col("text"))) > 0)
-    .limit(N_DOCS)
-)
+_parquet = resolve_parquet_path()
+if _parquet is not None:
+    df = (
+        spark.read.parquet(spark_local_parquet_uri(_parquet))
+        .select("id", "title", "text")
+        .where(F.col("id").isNotNull() & F.col("title").isNotNull() & F.col("text").isNotNull())
+        .where(F.length(F.trim(F.col("text"))) > 0)
+        .limit(N_DOCS)
+    )
 
-if os.path.exists(LOCAL_DATA_DIR):
-    shutil.rmtree(LOCAL_DATA_DIR)
-os.makedirs(LOCAL_DATA_DIR, exist_ok=True)
+    if os.path.exists(LOCAL_DATA_DIR):
+        shutil.rmtree(LOCAL_DATA_DIR)
+    os.makedirs(LOCAL_DATA_DIR, exist_ok=True)
 
-rows = df.collect()
-for row in rows:
-    file_name = build_filename(str(row["id"]), str(row["title"]))
-    file_path = os.path.join(LOCAL_DATA_DIR, file_name)
-    with open(file_path, "w", encoding="utf-8") as f:
-        f.write(row["text"])
+    rows = df.collect()
+    for row in rows:
+        file_name = build_filename(str(row["id"]), str(row["title"]))
+        file_path = os.path.join(LOCAL_DATA_DIR, file_name)
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(row["text"])
+else:
+    # Fallback for clean clone: use repository sample txt documents.
+    local_docs = glob(f"{LOCAL_DATA_DIR}/*.txt")
+    if not local_docs:
+        raise FileNotFoundError(
+            "No /a.parquet and no local sample docs in /app/data/*.txt. "
+            "Provide a.parquet or add sample text files."
+        )
 
 sc = spark.sparkContext
 subprocess.run(["hdfs", "dfs", "-rm", "-r", "-f", HDFS_DOCS_DIR], check=False)

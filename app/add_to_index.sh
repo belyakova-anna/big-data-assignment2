@@ -65,7 +65,8 @@ hdfs dfs -mkdir -p /input/data
 hdfs dfs -put "${TMP_LOCAL_INPUT}" /input/data/part-00000
 hdfs dfs -touchz /input/data/_SUCCESS
 
-echo "Rebuilding index and refreshing Cassandra tables ..."
-bash index.sh /input/data
+echo "Incremental Cassandra update ..."
+source .venv/bin/activate
+python3 incremental_index.py "${LOCAL_FILE}"
 
-echo "Document added and index refreshed."
+echo "Document added (HDFS /input/data updated; Cassandra updated incrementally)."

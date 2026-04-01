@@ -41,7 +41,8 @@ def fetch_postings(session, term: str):
 def bm25_score(tf: int, doc_len: int, df: int, docs_count: int, avg_doc_len: float) -> float:
     if tf <= 0 or df <= 0 or docs_count <= 0 or avg_doc_len <= 0:
         return 0.0
-    idf = math.log(((docs_count - df + 0.5) / (df + 0.5)) + 1.0)
+    # Assignment formula: log(N / df)
+    idf = math.log(docs_count / df)
     norm = K1 * (1.0 - B + B * (doc_len / avg_doc_len)) + tf
     return idf * ((K1 + 1.0) * tf) / norm
 
@@ -94,8 +95,9 @@ def main():
         .takeOrdered(10, key=lambda x: -x[2])
     )
 
-    for doc_id, title, _ in top10:
-        print(f"{doc_id}\t{title}")
+    print(f"query\t{query}")
+    for doc_id, title, score in top10:
+        print(f"{doc_id}\t{title}\tscore={score:.6f}")
 
     spark.stop()
     cluster.shutdown()
