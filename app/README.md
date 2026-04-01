@@ -2,7 +2,10 @@
 This folder contains the data folder and all scripts and source code that are required to run your simple search engine. 
 
 ### data
-This folder stores the text documents required to index. Here you can find a sample of 100 documents from `a.parquet` file from the original source.
+This folder stores plain-text documents to index (`<doc_id>_<doc_title>.txt`). They are produced by `prepare_data.py` from the Kaggle parquet sample (typically up to 1000 files), or you can add files manually for testing.
+
+### a.parquet (optional input)
+Place the Kaggle Wikipedia parquet file here as `a.parquet` before running `prepare_data.sh` (see root `README.md`). If missing, `prepare_data.py` falls back to existing `.txt` files under `data/`.
 
 ### mapreduce
 This folder stores the mapper `mapperx.py` and reducer `reducerx.py` scripts for the MapReduce pipelines.
@@ -23,7 +26,13 @@ A script to run the MapReduce pipelines and the programs to store data in Cassan
 The script that will create documents from parquet file. You can run it in the driver.
 
 ### prepare_data.sh
-The script that will run the prevoious Python file and will copy the data to HDFS.
+Runs `prepare_data.py` and copies generated documents to HDFS (`/data`, `/input/data`). Uploads `a.parquet` to HDFS when present locally.
+
+### incremental_index.py
+Python script used by `add_to_index.sh`: updates Cassandra tables (`postings`, `vocabulary`, `document_stats`, `corpus_stats`) for a single new or replaced document without rebuilding MapReduce outputs under `/indexer`.
+
+### add_to_index.sh
+Optional workflow: takes a local `<doc_id>_<doc_title>.txt`, updates HDFS `/data` and merged `/input/data`, then calls `incremental_index.py` to refresh the Cassandra index in place.
 
 ### query.py
 A Python file to write PySpark app that will process a user's query and retrieves a list of top 10 relevant documents ranked using BM25.
